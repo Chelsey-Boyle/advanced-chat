@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+
+
+
+<head>
+	<title>Advanced Chat</title>
+    <meta charset="utf-8"/>
+    
+    <style>
+        .chitter {
+          background-color: blue;
+          color: white;
+          padding: 3px;
+          border-radius: 5px;
+        }
+    </style>
+    
+
+</head>
+
+<body>
+    <script src="https://www.gstatic.com/firebasejs/8.2.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.2.1/firebase-firestore.js"></script>
+
+    <h1> <span class="chitter">Chitter Chat</span> </h1>
+    <ul>
+        <li>Type in your text to send a message, or</li>
+        <li>Type /giphy into the message box to send a random gif (e.g. /giphy cat)</li>
+    </ul>
+    <label>Username:</label>
+    <input type="text" id="username" placeholder="Chelsey">
+    
+    <label>Message:</label>
+    <input type="text" id="message" placeholder="Hi Chelsey">
+    
+    <button id="send">Send</button>
+    
+    <h3>Chat Messages:</h3>
+
+    <div id="messagesContainer">
+    </div>
+
+     <script>
+
+        var firebaseConfig = {
+            apiKey: "AIzaSyDAaPC7tYWJ3e1-8Pm-obfhnYENT4QY458",
+            authDomain: "advanced-chat-d5367.firebaseapp.com",
+            projectId: "advanced-chat-d5367",
+            storageBucket: "advanced-chat-d5367.appspot.com",
+            messagingSenderId: "1084952075772",
+            appId: "1:1084952075772:web:a48af6702182845ef42679"
+
+        };
+        firebase.initializeApp(firebaseConfig);
+        var firestore = firebase.firestore();
+
+        var collectionRef = firestore.collection('messages')
+        var inputUsername = document.getElementById("username")
+        var inputMessage = document.getElementById("message")
+        var sendButton = document.getElementById("send")
+        var messagesContainer = document.getElementById("messagesContainer")
+
+        // Chelsey API Key 
+        var apiKey = 'oNv14jDNlUuoX9RBB9mpNpuYgnLzKMY7'
+        var base_url = 'https://api.giphy.com/v1/gifs/random?api_key=' + apiKey + '&rating=g&lang=en&tag='
+
+        var saveMessageToFirestore = (username, textToSave, bGiphyURL) => {
+            collectionRef.add({
+                    username: username,
+                    text: textToSave,
+                    timestamp: Date.now(),
+                    bGiphyURL: bGiphyURL
+                }).then(() => {
+                    console.log("The Message is saved!");
+                }).catch((error) => {
+                    console.log("There is an error:", error);
+                });
+        }
+        sendButton.addEventListener("click", () => {                
+            
+            text = inputMessage.value
+            if(text.indexOf('/giphy') == 0) {
+                console.log("String starts with the giphy command" + text.indexOf('/giphy'))
+                text = text.substring(7);
+                url = base_url + encodeURI(text)
+
+                fetch(url)
+                .then(response => response.json())
+                .then(myJson => {
+                    saveMessageToFirestore(inputUsername.value, myJson.data.image_url, true)
+                })
+            } else {
+                saveMessageToFirestore(inputUsername.value, inputMessage.value, false)
+            }
+    })
+        var getRealTimeUpdates = () => {
+            var collectionQuery = firestore.collection('messages').orderBy('timestamp', 'asc')
+            collectionQuery.onSnapshot((snapshot) => {                
+                snapshot.docChanges().forEach((docChange) => {
+                    console.log(docChange)
+                    var data = docChange.doc.data()
+        
+                    if(data.bGiphyURL) {
+                        
+                        var div = document.createElement("DIV");
+                        div.innerHTML = data.username + ": ";
+
+                        var img = document.createElement("IMG");
+                        img.src = data.text
+                        div.appendChild(img)
+                        messagesContainer.appendChild(div); 
+
+
+                    } else {
+                        var div = document.createElement("DIV");   
+                        div.innerHTML = data.username + ": " + data.text; 
+                        messagesContainer.appendChild(div); 
+                    }                    
+                });
+            });
+     }
+       
+     
+     getRealTimeUpdates();
+
+      </script>
+
+
+</body>
+</html>
